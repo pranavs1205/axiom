@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: axiom
+    runtime: python
+    rootDir: .
+    buildCommand: |
+      pip install -r axiom/requirements.txt
+      cd axiom && npm install
+    startCommand: cd axiom && uvicorn server:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SOMNIA_PRIVATE_KEY
+        sync: false
+      - key: SOMNIA_RPC_URL
+        value: https://api.infra.testnet.somnia.network
+      - key: SOMNIA_CHAIN_ID
+        value: "50312"
+      - key: PROVENANCE_REGISTRY_ADDRESS
+        sync: false
+      - key: COMPLIANCE_LOG_ADDRESS
+        value: ""
+    plan: free

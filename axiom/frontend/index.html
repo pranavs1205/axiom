@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axiom — Research Paper to Live Protocol</title>
+  <style>
+    :root {
+      --bg:        #08080f;
+      --surface:   #11111c;
+      --surface2:  #181825;
+      --border:    #1e1e30;
+      --accent:    #7c3aed;
+      --accent2:   #06b6d4;
+      --accent3:   #10b981;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --pass:      #22c55e;
+      --anomaly:   #f59e0b;
+      --violation: #ef4444;
+      --unknown:   #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .logo { font-size: 1.6rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
+    .tagline { color: var(--muted); font-size: 0.8rem; }
+    .chain-badge { margin-left: auto; background: var(--surface2); border: 1px solid var(--border); border-radius: 9999px; padding: 0.3rem 0.8rem; font-size: 0.72rem; color: var(--accent2); display: flex; align-items: center; gap: 0.4rem; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Agent Pipeline Banner ── */
+    .pipeline {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem; display: flex; align-items: center; gap: 0; overflow-x: auto;
+    }
+    .pipe-node {
+      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+      padding: 0.5rem 1rem; border-radius: 8px; background: var(--surface2);
+      border: 1px solid var(--border); min-width: 110px; text-align: center;
+      transition: border-color .3s;
+    }
+    .pipe-node.active  { border-color: var(--accent); }
+    .pipe-node.done    { border-color: var(--pass); }
+    .pipe-node.waiting { opacity: .45; }
+    .pipe-icon { font-size: 1.3rem; }
+    .pipe-label { font-size: 0.65rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .pipe-name  { font-size: 0.8rem; font-weight: 600; }
+    .pipe-arrow { color: var(--muted); font-size: 1rem; padding: 0 0.5rem; flex-shrink: 0; }
+
+    /* ── Layout ── */
+    main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+    .full-width { grid-column: 1 / -1; }
+
+    /* ── Cards ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; }
+    .card-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .card-title-icon { font-size: 1rem; }
+
+    /* ── Upload ── */
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 10px; padding: 2rem;
+      text-align: center; cursor: pointer; transition: all .2s;
+    }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(124,58,237,.05); }
+    .drop-zone input { display: none; }
+    .drop-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .drop-text { color: var(--muted); font-size: 0.875rem; }
+    .drop-text strong { color: var(--accent); }
+    .file-name { margin-top: 0.5rem; color: var(--accent2); font-size: 0.8rem; font-weight: 600; }
+
+    .query-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 0.9rem; color: var(--text); font-size: 0.85rem; margin-top: 1rem; outline: none; transition: border-color .2s; }
+    .query-input:focus { border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.7rem 1.5rem; border-radius: 8px; border: none; cursor: pointer;
+      font-size: 0.875rem; font-weight: 600; transition: all .2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; margin-top: 1rem; }
+    .btn-primary:hover:not(:disabled) { background: #6d28d9; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-demo { background: var(--accent2); color: #000; font-size: 0.8rem; padding: 0.5rem 1.1rem; border-radius: 6px; }
+    .btn-demo:hover:not(:disabled) { opacity: .85; }
+    .btn-demo:disabled { opacity:.4; cursor:not-allowed; }
+
+    /* ── Step log ── */
+    .log-box { background: var(--surface2); border-radius: 8px; padding: 1rem; height: 220px; overflow-y: auto; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 0.75rem; }
+    .step { padding: 0.2rem 0; border-bottom: 1px solid var(--border); color: var(--muted); }
+    .step:last-child { border-bottom: none; }
+    .step.active-step { color: var(--accent2); }
+    .step.done-step { color: var(--pass); }
+    .step.err { color: var(--violation); }
+
+    /* ── Result cards ── */
+    .result-section { display: none; }
+    .addr-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+    .addr-label { color: var(--muted); font-size: 0.72rem; min-width: 90px; }
+    .addr-val { font-family: monospace; font-size: 0.78rem; color: var(--accent2); word-break: break-all; }
+    .addr-link { color: var(--accent); text-decoration: none; font-size: 0.72rem; white-space: nowrap; }
+    .addr-link:hover { text-decoration: underline; }
+
+    .event-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .event-tag { background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.3); border-radius: 4px; padding: 0.2rem 0.5rem; font-size: 0.72rem; color: var(--accent); }
+
+    /* ── Interact panel ── */
+    .fn-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem; color: var(--text); font-size: 0.82rem; margin-bottom: 0.8rem; cursor: pointer; }
+    .interact-result { margin-top: 0.8rem; padding: 0.7rem; background: var(--surface2); border-radius: 8px; font-size: 0.78rem; display: none; }
+    .interact-result a { color: var(--accent2); }
+
+    /* ── Solidity viewer ── */
+    .code-box { background: #0d1117; border-radius: 8px; padding: 1rem; overflow-x: auto; max-height: 280px; overflow-y: auto; }
+    .code-box pre { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: #c9d1d9; white-space: pre; }
+
+    /* ── Compliance feed ── */
+    .compliance-feed { display: flex; flex-direction: column; gap: 0.6rem; max-height: 420px; overflow-y: auto; }
+    .verdict-card {
+      background: var(--surface2); border-radius: 8px; padding: 0.9rem 1rem;
+      border-left: 3px solid var(--unknown); display: grid;
+      grid-template-columns: auto 1fr auto; gap: 0.5rem 1rem; align-items: start;
+    }
+    .verdict-card.PASS      { border-left-color: var(--pass); }
+    .verdict-card.ANOMALY   { border-left-color: var(--anomaly); }
+    .verdict-card.VIOLATION { border-left-color: var(--violation); }
+    .verdict-badge { padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+    .verdict-badge.PASS      { background: rgba(34,197,94,.15);  color: var(--pass); }
+    .verdict-badge.ANOMALY   { background: rgba(245,158,11,.15); color: var(--anomaly); }
+    .verdict-badge.VIOLATION { background: rgba(239,68,68,.15);  color: var(--violation); }
+    .verdict-badge.UNKNOWN   { background: rgba(100,116,139,.15);color: var(--unknown); }
+    .verdict-event { font-weight: 600; font-size: 0.82rem; }
+    .verdict-explain { font-size: 0.78rem; color: var(--muted); grid-column: 1 / -1; }
+    .verdict-cite { font-size: 0.72rem; color: var(--accent); font-style: italic; grid-column: 1 / -1; }
+    .verdict-tx { font-family: monospace; font-size: 0.68rem; color: var(--muted); }
+    .empty-feed { color: var(--muted); font-size: 0.82rem; text-align: center; padding: 2rem; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div>
+    <div class="logo">Axiom</div>
+    <div class="tagline">Research Paper Intelligence — Paper to Protocol</div>
+  </div>
+  <div class="chain-badge"><span class="dot"></span> Somnia Testnet</div>
+</header>
+
+<!-- Agent Pipeline -->
+<div class="pipeline">
+  <div class="pipe-node waiting" id="pipe-reader">
+    <span class="pipe-icon">📄</span>
+    <span class="pipe-label">Agent 1</span>
+    <span class="pipe-name">PaperReader</span>
+  </div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-node waiting" id="pipe-deploy">
+    <span class="pipe-icon">⚙️</span>
+    <span class="pipe-label">Agent 2</span>
+    <span class="pipe-name">DeployAgent</span>
+  </div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-node waiting" id="pipe-somnia">
+    <span class="pipe-icon">⛓️</span>
+    <span class="pipe-label">Somnia</span>
+    <span class="pipe-name">Live Contract</span>
+  </div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-node waiting" id="pipe-watcher">
+    <span class="pipe-icon">👁️</span>
+    <span class="pipe-label">Reactivity</span>
+    <span class="pipe-name">AxiomWatcher</span>
+  </div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-node waiting" id="pipe-compliance">
+    <span class="pipe-icon">🤖</span>
+    <span class="pipe-label">Agent 3</span>
+    <span class="pipe-name">ComplianceAgent</span>
+  </div>
+</div>
+
+<main>
+
+  <!-- Upload + Deploy -->
+  <div class="card">
+    <div class="card-title"><span class="card-title-icon">📤</span>Upload Research Paper</div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="pdfInput" accept=".pdf" />
+      <div class="drop-icon">📄</div>
+      <div class="drop-text">Drag & drop a PDF or <strong>click to browse</strong></div>
+      <div class="file-name" id="fileName"></div>
+    </div>
+    <input type="text" class="query-input" id="queryInput"
+      placeholder="What to implement (e.g. implement the AMM swap mechanism)"
+      value="implement the core mechanism described in the paper methodology" />
+    <button class="btn btn-primary" id="deployBtn" disabled>Deploy to Somnia</button>
+  </div>
+
+  <!-- Deployment Log -->
+  <div class="card">
+    <div class="card-title"><span class="card-title-icon">📡</span>Deployment Log</div>
+    <div class="log-box" id="logBox">
+      <div class="step" style="color:var(--muted);padding:.5rem">Waiting for PDF upload...</div>
+    </div>
+  </div>
+
+  <!-- Contract Info (hidden until deployed) -->
+  <div class="card result-section" id="contractCard">
+    <div class="card-title"><span class="card-title-icon">📦</span>Deployed Contract</div>
+    <div class="addr-row">
+      <span class="addr-label">Contract</span>
+      <span class="addr-val" id="rContractAddr"></span>
+      <a class="addr-link" id="rContractLink" href="#" target="_blank">View on Explorer</a>
+    </div>
+    <div class="addr-row">
+      <span class="addr-label">Watcher</span>
+      <span class="addr-val" id="rWatcherAddr"></span>
+      <a class="addr-link" id="rWatcherLink" href="#" target="_blank">View on Explorer</a>
+    </div>
+    <div class="addr-row">
+      <span class="addr-label">Paper Hash</span>
+      <span class="addr-val" id="rPaperHash"></span>
+    </div>
+    <div class="addr-row">
+      <span class="addr-label">Events</span>
+      <div class="event-tags" id="rEvents"></div>
+    </div>
+  </div>
+
+  <!-- Demo Interaction -->
+  <div class="card result-section" id="interactCard">
+    <div class="card-title"><span class="card-title-icon">🎮</span>Trigger Demo Transaction</div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:.8rem">
+      Call a function on the deployed contract to emit an event. The ComplianceAgent will verify it against the paper in real-time.
+    </p>
+    <select class="fn-select" id="fnSelect"><option>Loading functions...</option></select>
+    <button class="btn btn-demo" id="interactBtn" disabled>Send Transaction</button>
+    <div class="interact-result" id="interactResult"></div>
+  </div>
+
+  <!-- Solidity Code -->
+  <div class="card result-section full-width" id="codeCard">
+    <div class="card-title"><span class="card-title-icon">📝</span>Generated Solidity — <span id="rContractName" style="color:var(--accent2)"></span></div>
+    <div class="code-box"><pre id="solidityCode"></pre></div>
+  </div>
+
+  <!-- Live Compliance Feed -->
+  <div class="card result-section full-width" id="complianceCard">
+    <div class="card-title">
+      <span class="card-title-icon">🔍</span>Live Compliance Feed
+      <span id="complianceCount" style="margin-left:auto;font-size:.75rem;color:var(--muted)">0 checks</span>
+    </div>
+    <div class="compliance-feed" id="complianceFeed">
+      <div class="empty-feed">Compliance checks will appear here as transactions are processed...</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const API = "";
+  let currentContract = null;
+  let currentAbi = null;
+  let complianceSource = null;
+  let seenTxHashes = new Set();
+
+  // ── Pipeline node helpers ─────────────────────────────────────────────────
+
+  function pipeSet(id, state) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove("waiting", "active", "done");
+    el.classList.add(state);
+  }
+
+  // ── Drop zone ─────────────────────────────────────────────────────────────
+
+  const dropZone = document.getElementById("dropZone");
+  const pdfInput = document.getElementById("pdfInput");
+  const deployBtn = document.getElementById("deployBtn");
+
+  dropZone.addEventListener("click", () => pdfInput.click());
+  pdfInput.addEventListener("change", () => {
+    if (pdfInput.files[0]) {
+      document.getElementById("fileName").textContent = pdfInput.files[0].name;
+      deployBtn.disabled = false;
+    }
+  });
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+  dropZone.addEventListener("drop", e => {
+    e.preventDefault();
+    dropZone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith(".pdf")) {
+      pdfInput.files = e.dataTransfer.files;
+      document.getElementById("fileName").textContent = file.name;
+      deployBtn.disabled = false;
+    }
+  });
+
+  // ── Logging ───────────────────────────────────────────────────────────────
+
+  function addLog(msg, cls = "") {
+    const box = document.getElementById("logBox");
+    // Clear placeholder
+    if (box.querySelector(".step[style]")) box.innerHTML = "";
+    const div = document.createElement("div");
+    div.className = "step " + cls;
+    div.textContent = msg;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // ── Deploy ────────────────────────────────────────────────────────────────
+
+  deployBtn.addEventListener("click", async () => {
+    const file = pdfInput.files[0];
+    if (!file) return;
+
+    deployBtn.disabled = true;
+    deployBtn.textContent = "Deploying...";
+    document.getElementById("logBox").innerHTML = "";
+
+    // Reset pipeline
+    ["pipe-reader","pipe-deploy","pipe-somnia","pipe-watcher","pipe-compliance"].forEach(id => pipeSet(id, "waiting"));
+    pipeSet("pipe-reader", "active");
+
+    const fd = new FormData();
+    fd.append("pdf", file);
+    fd.append("query", document.getElementById("queryInput").value);
+
+    const res = await fetch(`${API}/api/deploy`, { method: "POST", body: fd });
+    const { job_id } = await res.json();
+
+    const es = new EventSource(`${API}/api/stream/${job_id}`);
+
+    es.onmessage = e => {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === "step") {
+        const text = msg.message;
+        addLog(text, text.startsWith("ERROR") ? "err" : "active-step");
+
+        // Advance pipeline nodes based on step content
+        if (text.includes("Filtering") || text.includes("Building vector"))   pipeSet("pipe-reader", "done"), pipeSet("pipe-deploy", "active");
+        if (text.includes("Generating Solidity"))                              pipeSet("pipe-deploy", "active");
+        if (text.includes("Compiling and deploying"))                          pipeSet("pipe-somnia", "active");
+        if (text.includes("AxiomWatcher"))                                     pipeSet("pipe-somnia", "done"), pipeSet("pipe-watcher", "active");
+        if (text.includes("infrastructure") || text.includes("provenance"))   pipeSet("pipe-watcher", "done"), pipeSet("pipe-compliance", "active");
+        if (text.includes("Done!"))                                            pipeSet("pipe-compliance", "done");
+      }
+
+      if (msg.type === "done") {
+        es.close();
+        addLog("Deployment complete!", "done-step");
+        showResult(msg.result);
+      }
+
+      if (msg.type === "error") {
+        es.close();
+        addLog("ERROR: " + msg.message, "err");
+        deployBtn.disabled = false;
+        deployBtn.textContent = "Deploy to Somnia";
+      }
+    };
+
+    es.onerror = () => {
+      es.close();
+      addLog("Connection lost. Check server.", "err");
+      deployBtn.disabled = false;
+      deployBtn.textContent = "Deploy to Somnia";
+    };
+  });
+
+  // ── Show result ───────────────────────────────────────────────────────────
+
+  function showResult(result) {
+    currentContract = result.contract_address;
+    currentAbi      = result.abi || null;
+
+    // Contract info
+    document.getElementById("rContractAddr").textContent = result.contract_address || "";
+    document.getElementById("rWatcherAddr").textContent  = result.watcher_address  || "N/A";
+    document.getElementById("rPaperHash").textContent    = (result.paper_hash || "").slice(0, 18) + "...";
+    document.getElementById("rContractLink").href        = result.explorer_url || "#";
+    document.getElementById("rWatcherLink").href         = result.watcher_url  || "#";
+    document.getElementById("rContractName").textContent = result.contract_name || "";
+
+    // Events
+    const tagsEl = document.getElementById("rEvents");
+    tagsEl.innerHTML = "";
+    (result.events || []).forEach(ev => {
+      const tag = document.createElement("span");
+      tag.className = "event-tag";
+      tag.textContent = ev;
+      tagsEl.appendChild(tag);
+    });
+
+    // Solidity code
+    document.getElementById("solidityCode").textContent = result.solidity_code || "(code not available)";
+
+    // Show all result sections
+    ["contractCard","interactCard","codeCard","complianceCard"].forEach(id => {
+      document.getElementById(id).style.display = "block";
+    });
+
+    // Load functions for interact panel
+    loadFunctions(result.contract_address);
+
+    // Start SSE compliance stream
+    startComplianceStream(result.contract_address);
+
+    deployBtn.disabled = false;
+    deployBtn.textContent = "Deploy to Somnia";
+  }
+
+  // ── Interact ──────────────────────────────────────────────────────────────
+
+  async function loadFunctions(contractAddress) {
+    try {
+      const res  = await fetch(`${API}/api/contracts/${contractAddress}/functions`);
+      const data = await res.json();
+      const sel  = document.getElementById("fnSelect");
+      sel.innerHTML = "";
+      if (!data.functions || data.functions.length === 0) {
+        sel.innerHTML = "<option>No callable functions found</option>";
+        return;
+      }
+      data.functions.forEach(fn => {
+        const opt = document.createElement("option");
+        const paramStr = fn.inputs.map(p => `${p.type} ${p.name}`).join(", ");
+        opt.value = fn.name;
+        opt.textContent = `${fn.name}(${paramStr})`;
+        sel.appendChild(opt);
+      });
+      document.getElementById("interactBtn").disabled = false;
+    } catch (e) {
+      document.getElementById("fnSelect").innerHTML = "<option>Failed to load functions</option>";
+    }
+  }
+
+  document.getElementById("interactBtn").addEventListener("click", async () => {
+    if (!currentContract) return;
+    const btn   = document.getElementById("interactBtn");
+    const fnSel = document.getElementById("fnSelect");
+    const resultEl = document.getElementById("interactResult");
+
+    btn.disabled = true;
+    btn.textContent = "Sending...";
+    resultEl.style.display = "none";
+
+    try {
+      const res  = await fetch(`${API}/api/interact/${currentContract}?function_name=${fnSel.value}`, { method: "POST" });
+      const data = await res.json();
+
+      if (res.ok) {
+        resultEl.style.display = "block";
+        resultEl.innerHTML = `
+          Transaction sent!<br>
+          Function: <strong>${data.function_name}</strong><br>
+          Tx: <a href="${data.explorer_url}" target="_blank">${data.tx_hash.slice(0,18)}...</a><br>
+          <span style="color:var(--muted)">Compliance check will appear below...</span>
+        `;
+        resultEl.style.color = "var(--pass)";
+      } else {
+        resultEl.style.display = "block";
+        resultEl.style.color   = "var(--violation)";
+        resultEl.textContent   = "Error: " + (data.detail || JSON.stringify(data));
+      }
+    } catch (e) {
+      resultEl.style.display = "block";
+      resultEl.style.color   = "var(--violation)";
+      resultEl.textContent   = "Request failed: " + e.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Send Transaction";
+    }
+  });
+
+  // ── Compliance SSE stream ─────────────────────────────────────────────────
+
+  function startComplianceStream(contractAddress) {
+    if (complianceSource) complianceSource.close();
+    complianceSource = new EventSource(`${API}/api/stream/compliance/${contractAddress}`);
+    complianceSource.onmessage = e => {
+      try {
+        const record = JSON.parse(e.data);
+        const key = record.tx_hash + record.event_name;
+        if (seenTxHashes.has(key)) return;
+        seenTxHashes.add(key);
+        prependCompliance(record);
+      } catch (_) {}
+    };
+  }
+
+  function prependCompliance(record) {
+    const feed = document.getElementById("complianceFeed");
+    const empty = feed.querySelector(".empty-feed");
+    if (empty) empty.remove();
+
+    const verdict = (record.verdict || "UNKNOWN").toUpperCase();
+    const card = document.createElement("div");
+    card.className = `verdict-card ${verdict}`;
+    const txShort = (record.tx_hash || "").slice(0, 14) + "...";
+    const block = record.block ? `block ${record.block}` : "";
+
+    card.innerHTML = `
+      <span class="verdict-badge ${verdict}">${verdict}</span>
+      <span class="verdict-event">${record.event_name || "Event"}</span>
+      <span class="verdict-tx">${txShort} ${block}</span>
+      <div class="verdict-explain">${record.explanation || ""}</div>
+      ${record.cited_section ? `<div class="verdict-cite">Cited: ${record.cited_section}</div>` : ""}
+    `;
+    feed.insertBefore(card, feed.firstChild);
+
+    // Update count
+    const countEl = document.getElementById("complianceCount");
+    const cur = parseInt(countEl.textContent) || 0;
+    countEl.textContent = (cur + 1) + " check" + (cur + 1 !== 1 ? "s" : "");
+  }
+</script>
+</body>
+</html>

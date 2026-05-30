@@ -1,0 +1,18 @@
+# ── AI / NLP pipeline (shared with ../project) ──
+pypdf>=4.0.0
+pdfplumber>=0.10.0
+faiss-cpu>=1.7.4
+sentence-transformers>=2.7.0
+langchain-groq>=0.1.3
+langchain-core>=0.2.0
+numpy>=1.24.0
+python-dotenv>=1.0.0
+
+# ── Blockchain ──
+web3>=6.0.0
+py-solc-x>=1.1.1
+
+# ── FastAPI server ──
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
