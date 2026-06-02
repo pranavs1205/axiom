@@ -176,7 +176,7 @@ async def _run_deploy(job_id: str, pdf_path: str, query: str):
 async def frontend():
     html = Path(__file__).parent / "frontend" / "index.html"
     if html.exists():
-        return html.read_text()
+        return html.read_text(encoding="utf-8")
     return "<h1>Axiom</h1><p>Frontend not found — place index.html in axiom/frontend/</p>"
 
 
