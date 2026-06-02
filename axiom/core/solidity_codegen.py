@@ -43,6 +43,10 @@ HARD RULES:
 13. Keep the contract SIMPLE and DEPLOYABLE. Avoid complex algorithms with loops over large arrays.
     If the paper describes complex math, approximate it with simple mappings and integer arithmetic.
     A working simple contract is better than a broken complex one.
+14. ARGUMENT COUNT: Every function call MUST pass exactly the right number of arguments.
+    Before writing any call, count the parameters in the function definition and match them exactly.
+    NEVER write: someFunction() if someFunction(uint256 x) requires 1 argument.
+    NEVER omit required constructor arguments when deploying contracts with `new`.
 
 THE EXACT OUTPUT STRUCTURE (copy this skeleton):
 
@@ -274,13 +278,20 @@ def _fix_missing_data_locations(code: str) -> str:
 
 
 FIX_SYSTEM_PROMPT = """You are an expert Solidity 0.8.20 compiler and debugger.
-The code below has a compilation error. Fix ONLY what the error message says.
+The code below fails to compile. Study the EXACT error message and fix it.
 Output ONLY the complete corrected Solidity source. No markdown, no explanations.
-Rules: no imports, no floats, max 3 indexed per event, all reference params need data location."""
+
+Core rules to never break:
+- No imports or external packages
+- No float literals (use scaled integers)
+- Max 3 indexed params per event
+- All string/bytes/array params need calldata or memory
+- Every function call must pass exactly the right number of arguments
+- Never call an undefined function"""
 
 
 def _try_compile(code: str, contract_name: str) -> str | None:
-    """Try to compile code with solcx. Returns error string or None on success."""
+    """Try to compile code with solcx. Returns focused error string or None on success."""
     try:
         import solcx
         if "0.8.20" not in [str(v) for v in solcx.get_installed_solc_versions()]:
@@ -289,15 +300,20 @@ def _try_compile(code: str, contract_name: str) -> str | None:
         solcx.compile_source(code, output_values=["abi", "bin"], optimize=True, optimize_runs=200)
         return None  # success
     except Exception as e:
-        return str(e)
+        err = str(e)
+        # Extract just the stderr section which has the actual solc errors with line numbers
+        if "stderr:" in err:
+            err = err[err.index("stderr:"):].strip()
+        return err[:2000]  # give LLM enough context including line numbers
 
 
 def _fix_with_llm(code: str, error: str, api_key: str) -> str:
     """Ask the LLM to fix a specific Solidity compilation error."""
     user_prompt = (
-        f"COMPILATION ERROR:\n{error[:800]}\n\n"
-        f"CURRENT CODE:\n{code}\n\n"
-        "Fix the error. Output ONLY the complete corrected Solidity source code."
+        f"COMPILATION ERROR (includes line numbers):\n{error}\n\n"
+        f"FULL CONTRACT CODE:\n{code}\n\n"
+        "Find the exact lines causing the error and fix them. "
+        "Output ONLY the complete corrected Solidity source code."
     )
     raw = call_llm_with_system(FIX_SYSTEM_PROMPT, user_prompt, api_key=api_key, temperature=0.0)
     return _fix_structure(raw)
@@ -340,19 +356,19 @@ def generate_solidity(query: str, store: VectorStore, api_key: str, top_k: int =
     raw = call_llm_with_system(SOLIDITY_SYSTEM_PROMPT, user_prompt, api_key=api_key, temperature=0.1)
     code = _fix_structure(raw)
 
-    # Compile-check-and-fix loop (up to 2 LLM fix attempts)
-    for attempt in range(3):
+    # Compile-check-and-fix loop (up to 3 LLM fix attempts)
+    for attempt in range(4):
         contract_name_tmp = _extract_contract_name(code)
         err = _try_compile(code, contract_name_tmp)
         if err is None:
             print(f"[solidity_codegen] Compile check passed (attempt {attempt})")
             break
-        if attempt < 2:
+        if attempt < 3:
             print(f"[solidity_codegen] Compile error (attempt {attempt}), asking LLM to fix...")
-            print(f"[solidity_codegen] Error: {err[:200]}")
+            print(f"[solidity_codegen] Error snippet: {err[:300]}")
             code = _fix_with_llm(code, err, api_key)
         else:
-            print(f"[solidity_codegen] Compile still failing after 2 fix attempts — passing to deployer")
+            print(f"[solidity_codegen] Compile still failing after 3 fix attempts — passing to deployer")
 
     contract_name = _extract_contract_name(code)
     events = re.findall(r"\bevent\s+(\w+)\s*\(", code)
