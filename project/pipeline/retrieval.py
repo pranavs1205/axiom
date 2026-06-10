@@ -39,7 +39,7 @@ def retrieve(query: str, store: VectorStore, top_k: int = 5) -> list[dict]:
     Returns:
         List of metadata dicts for the top-k most similar chunks.
     """
-    query_vec = store["model"].encode([query], convert_to_numpy=True).astype(np.float32)
+    query_vec = np.array(list(store["model"].embed([query])), dtype=np.float32)
     faiss.normalize_L2(query_vec)  # Must normalize to match IndexFlatIP cosine index
     scores, indices = store["index"].search(query_vec, top_k)
 

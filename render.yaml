@@ -4,10 +4,7 @@ services:
     runtime: python
     region: oregon
     plan: starter
-    buildCommand: >-
-      pip install -r axiom/requirements.txt &&
-      cd axiom && npm install &&
-      python -c "import solcx; solcx.install_solc('0.8.20'); print('[build] solc 0.8.20 ready')"
+    buildCommand: pip install -r axiom/requirements.txt && python -c 'import solcx; solcx.install_solc("0.8.20")' && python -c 'from fastembed import TextEmbedding; TextEmbedding("BAAI/bge-small-en-v1.5")'
     startCommand: cd axiom && uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: GROQ_API_KEY
