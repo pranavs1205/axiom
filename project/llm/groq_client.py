@@ -11,7 +11,7 @@ import time
 from groq import Groq
 
 DEFAULT_MODEL    = "llama-3.1-8b-instant"
-MAX_PROMPT_CHARS = 4_000
+MAX_PROMPT_CHARS = 24_000  # Groq llama-3.1-8b supports 128k context; 24k gives plenty of room
 MAX_RETRIES      = 3
 
 

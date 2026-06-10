@@ -90,27 +90,29 @@ async def _run_deploy(job_id: str, pdf_path: str, query: str):
         print(f"[job:{job_id}] {msg}")
         await asyncio.sleep(0)   # yield so SSE flushes
 
+    run = asyncio.to_thread  # shorthand — runs blocking calls off the event loop
+
     try:
         await step("Loading PDF...")
-        reader = load_pdf(pdf_path)
+        reader = await run(load_pdf, pdf_path)
 
         await step("Extracting text from paper...")
-        raw_text = extract_text(reader, pdf_path=pdf_path)
+        raw_text = await run(extract_text, reader, pdf_path)
 
         await step("Detecting sections...")
-        sections = split_into_sections(raw_text)
+        sections = await run(split_into_sections, raw_text)
 
         await step(f"Filtering relevant sections ({len(sections)} found, using AI)...")
-        filtered = filter_sections(sections, groq_api_key=GROQ_API_KEY)
+        filtered = await run(filter_sections, sections, GROQ_API_KEY)
         if not filtered:
             raise ValueError("No relevant sections found after filtering.")
 
         await step(f"Building vector store from {len(filtered)} sections...")
         chunks = chunk_sections(filtered)
-        store  = build_vector_store(chunks)
+        store  = await run(build_vector_store, chunks)
 
         await step("Generating Solidity from methodology (AI)...")
-        gen = generate_solidity(query, store, GROQ_API_KEY)
+        gen = await run(generate_solidity, query, store, GROQ_API_KEY)
         code   = gen["code"]
         events = gen["events"]
         cname  = gen["contract_name"]
@@ -123,7 +125,7 @@ async def _run_deploy(job_id: str, pdf_path: str, query: str):
         paper_title = filtered[0]["title"] if filtered else "Research Paper"
 
         await step(f"Compiling and deploying '{cname}' to Somnia...")
-        deploy = deploy_from_paper(code, cname, paper_title)
+        deploy = await run(deploy_from_paper, code, cname, paper_title)
 
         await step(f"AxiomWatcher (Reactivity) deployed at {deploy['watcher_address'] or 'skipped'}...")
         monitor.register(deploy["deployed_address"], deploy["abi"], store, GROQ_API_KEY)
@@ -161,7 +163,6 @@ async def _run_deploy(job_id: str, pdf_path: str, query: str):
     except Exception as e:
         job["status"] = "error"
         job["error"]  = str(e)
-        job["steps"].append(f"ERROR: {e}")
         print(f"[job:{job_id}] ERROR: {e}")
     finally:
         try:
@@ -329,6 +330,16 @@ async def startup():
         except SystemExit:
             print("[server] WARNING: GROQ_API_KEY not set — set it in axiom/.env")
 
+    # Pre-warm the sentence-transformer model so first deployment doesn't pay cold-load cost
+    async def _warm_model():
+        try:
+            from sentence_transformers import SentenceTransformer
+            await asyncio.to_thread(SentenceTransformer, "all-MiniLM-L6-v2")
+            print("[server] Embedding model pre-loaded.")
+        except Exception as e:
+            print(f"[server] Model pre-load skipped: {e}")
+
+    asyncio.create_task(_warm_model())
     asyncio.create_task(monitor.run_forever())
     print("[server] Axiom is running at http://localhost:8000")
 

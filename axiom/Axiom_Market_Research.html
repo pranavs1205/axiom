@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom — Market Research Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #1a1a2e;
+    background: #fff;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 48px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+    border-bottom: 3px solid #6366f1;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 32px;
+  }
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 32px 0 10px;
+    border-left: 4px solid #6366f1;
+    padding-left: 10px;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin: 20px 0 8px;
+  }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 10px 22px; }
+  li { margin-bottom: 4px; }
+  a { color: #6366f1; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 12px;
+  }
+  th {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  td {
+    border: 1px solid #e2e8f0;
+    padding: 7px 10px;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .stat-box {
+    display: inline-block;
+    background: #f1f5f9;
+    border-left: 4px solid #6366f1;
+    padding: 10px 16px;
+    margin: 6px 8px 6px 0;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .stat-box strong { font-size: 18px; display: block; color: #6366f1; }
+  .highlight {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    font-size: 12.5px;
+  }
+  .sources {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+  .sources a { color: #6366f1; }
+  .page-break { page-break-before: always; }
+  .cover {
+    text-align: center;
+    padding: 80px 0 60px;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 40px;
+  }
+  .cover h1 {
+    font-size: 36px;
+    border: none;
+    padding: 0;
+    margin-bottom: 10px;
+  }
+  .cover .tagline {
+    font-size: 16px;
+    color: #6366f1;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .cover .date { font-size: 12px; color: #94a3b8; margin-top: 20px; }
+  .toc a { color: #1e293b; display: block; padding: 3px 0; }
+  .toc a:hover { color: #6366f1; }
+  .verdict { font-weight: 600; }
+  .verdict.pass { color: #16a34a; }
+  .verdict.warn { color: #d97706; }
+  .verdict.gap  { color: #dc2626; }
+  @media print {
+    body { padding: 20px 30px; }
+    .cover { padding: 40px 0 30px; }
+    a { color: #6366f1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── COVER ─────────────────────────────────────────────────────────────── -->
+<div class="cover">
+  <h1>Axiom</h1>
+  <div class="tagline">Research Paper → Live Smart Contract + Autonomous Compliance Monitor</div>
+  <p style="color:#64748b;font-size:13px;">Market Research Report — Somnia Agentathon 2026</p>
+  <div class="date">Prepared June 2026 &nbsp;|&nbsp; Confidential</div>
+</div>
+
+<!-- ── TABLE OF CONTENTS ─────────────────────────────────────────────────── -->
+<h2>Contents</h2>
+<div class="toc" style="margin-bottom:28px;">
+  <a href="#exec">1. Executive Summary</a>
+  <a href="#problem1">2. Problem 1 — The Deployment Gap</a>
+  <a href="#problem2">3. Problem 2 — Specification Drift &amp; DeFi Hacks</a>
+  <a href="#market">4. Market Size</a>
+  <a href="#vacuum">5. The Monitoring Vacuum (OpenZeppelin Defender)</a>
+  <a href="#somnia">6. Somnia as a Technical Moat</a>
+  <a href="#competitors">7. Competitive Landscape</a>
+  <a href="#revenue">8. Revenue Model</a>
+  <a href="#pitch">9. Key Stats for the Pitch</a>
+  <a href="#sources">10. Sources</a>
+</div>
+
+<!-- ── 1. EXEC SUMMARY ───────────────────────────────────────────────────── -->
+<h2 id="exec">1. Executive Summary</h2>
+<p>Axiom attacks two structural failures in the DeFi ecosystem simultaneously:</p>
+<ul>
+  <li><strong>The Deployment Gap</strong> — Novel DeFi mechanisms published in academic papers almost never get deployed. The engineering barrier ($50–200k, 6–18 months, scarce Solidity talent) filters out 95%+ of research before it reaches a blockchain.</li>
+  <li><strong>Specification Drift</strong> — Once a protocol is deployed, no continuous mechanism verifies it behaves as its whitepaper specifies. Audits are one-shot. $4.2 billion was lost to logic errors and specification drift in 2025 alone.</li>
+</ul>
+<p>Axiom solves both in a single product: upload a research paper PDF → get a live, deployed smart contract on Somnia → get permanent, trustless, in-block compliance monitoring grounded in the paper itself.</p>
+<p>The Somnia-specific technical moat — <strong>Reactivity</strong> (same-block event response) — cannot be replicated on Ethereum, Polygon, or any other EVM chain. This is Axiom's defensible differentiation.</p>
+
+<!-- ── 2. DEPLOYMENT GAP ──────────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="problem1">2. Problem 1 — The Deployment Gap</h2>
+
+<h3>Cost and Time to Deploy a DeFi Protocol</h3>
+<div>
+  <div class="stat-box"><strong>$50–200k</strong>Solidity dev fees per protocol</div>
+  <div class="stat-box"><strong>6–18 months</strong>Paper → mainnet timeline</div>
+  <div class="stat-box"><strong>17:1</strong>Job-to-developer ratio</div>
+  <div class="stat-box"><strong>&lt;5%</strong>Academic papers that get deployed</div>
+</div>
+<ul style="margin-top:12px;">
+  <li>Average Solidity senior developer salary: <strong>$180,000–$280,000/year</strong> (Glassdoor, LinkedIn 2024)</li>
+  <li>ConsenSys 2024 Developer Survey: Solidity developer demand outpaces supply by <strong>17:1</strong> — the most severe shortage of any blockchain development skill</li>
+  <li>arXiv: <strong>14,000+ crypto/blockchain papers</strong> published in 2023–2024 alone — DeFiLlama's 7,000+ deployed protocols represent a tiny fraction of published mechanisms</li>
+  <li>Top academic venues (Financial Cryptography, ACM CCS, IEEE S&amp;P): hundreds of novel DeFi papers annually; estimated deployment rate under 5%</li>
+</ul>
+<p class="sources">Sources: <a href="https://consensys.io/developer-survey" target="_blank">ConsenSys Developer Survey 2024</a> &nbsp;|&nbsp; <a href="https://arxiv.org/list/cs.CR/2024" target="_blank">arXiv CS.CR 2024</a> &nbsp;|&nbsp; <a href="https://defillama.com" target="_blank">DeFiLlama</a> &nbsp;|&nbsp; <a href="https://www.glassdoor.com/Salaries/solidity-developer-salary-SRCH_KO0,18.htm" target="_blank">Glassdoor Solidity Salary</a></p>
+
+<h3>AI Code Generation for Smart Contracts — What Exists</h3>
+<table>
+  <tr><th>Tool</th><th>Paper Ingestion</th><th>Auto Deploy</th><th>Grounded in Spec</th><th>Notes</th></tr>
+  <tr><td><a href="https://openai.com/gpt-4" target="_blank">GPT-4 / Claude</a></td><td>No</td><td>No</td><td>No</td><td>Ad-hoc codegen, high hallucination rate on complex contracts</td></tr>
+  <tr><td><a href="https://chaingpt.org" target="_blank">ChainGPT</a></td><td>No</td><td>Partial</td><td>No</td><td>Template-based, no RAG, no paper ingestion</td></tr>
+  <tr><td><a href="https://tenderly.co" target="_blank">Tenderly</a></td><td>No</td><td>No</td><td>No</td><td>DevOps/debugging tooling, not codegen</td></tr>
+  <tr><td><a href="https://alchemy.com" target="_blank">Alchemy</a></td><td>No</td><td>No</td><td>No</td><td>RPC/infra only</td></tr>
+  <tr><td><strong>Axiom</strong></td><td><strong>Yes (RAG)</strong></td><td><strong>Yes</strong></td><td><strong>Yes</strong></td><td>Full pipeline: PDF → Solidity → deploy → monitor</td></tr>
+</table>
+<div class="highlight">
+  <strong>No direct competitor does paper → grounded Solidity → live deployment as a pipeline.</strong> Axiom is the only product that grounds code generation in the actual research content using RAG.
+</div>
+
+<!-- ── 3. SPECIFICATION DRIFT ─────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="problem2">3. Problem 2 — Specification Drift &amp; DeFi Hacks</h2>
+
+<div>
+  <div class="stat-box"><strong>$4.2B</strong>Lost to DeFi logic errors — 2025</div>
+  <div class="stat-box"><strong>$3.8B</strong>DeFi exploits — 2022</div>
+  <div class="stat-box"><strong>$1.7B</strong>DeFi exploits — 2023</div>
+  <div class="stat-box"><strong>0</strong>Continuous spec-grounded monitors (before Axiom)</div>
+</div>
+
+<h3>Case Studies — Specification Drift Causing Real Losses</h3>
+<table>
+  <tr><th>Exploit</th><th>Loss</th><th>Root Cause</th><th>Would Axiom Catch It?</th></tr>
+  <tr>
+    <td><a href="https://rekt.news/euler-rekt/" target="_blank">Euler Finance (2023)</a></td>
+    <td>$197M</td>
+    <td>Logic drift between donation accounting specification and implementation — allowed self-liquidation</td>
+    <td class="verdict pass">Yes — donation accounting constraints are in the whitepaper; Axiom flags violations per-event</td>
+  </tr>
+  <tr>
+    <td><a href="https://rekt.news/mango-markets-rekt/" target="_blank">Mango Markets (2022)</a></td>
+    <td>$117M</td>
+    <td>Oracle price manipulation violated stated price feed constraints in the protocol spec</td>
+    <td class="verdict pass">Yes — price feed bounds are specifiable; anomalous events trigger compliance check</td>
+  </tr>
+  <tr>
+    <td><a href="https://rekt.news/nomad-rekt/" target="_blank">Nomad Bridge (2022)</a></td>
+    <td>$190M</td>
+    <td>Upgrade introduced a flaw invisible to point-in-time auditors; no post-deployment monitor</td>
+    <td class="verdict pass">Yes — continuous monitoring catches post-upgrade drift</td>
+  </tr>
+  <tr>
+    <td><a href="https://rekt.news/beanstalk-rekt/" target="_blank">Beanstalk (2022)</a></td>
+    <td>$182M</td>
+    <td>Flash loan governance attack violated stated governance constraints</td>
+    <td class="verdict warn">Partial — governance timing violations detectable; flash loan atomicity harder</td>
+  </tr>
+</table>
+
+<h3>The Audit Market — Point-in-Time, Not Continuous</h3>
+<ul>
+  <li>Smart contract audit market: <strong>$940 million in 2024</strong>, projected <strong>$6.1 billion by 2033</strong> (CAGR 23.1%)</li>
+  <li>Average audit cost: <strong>$15,000–$120,000</strong> per engagement (CertiK, Trail of Bits, OpenZeppelin)</li>
+  <li><strong>Critical gap</strong>: All audits are one-shot. Post-deployment behavior is unmonitored. Upgrades and parameter changes after audit create new attack surfaces.</li>
+  <li>An "Axiom Compliance Report" is exportable and verifiable on-chain — auditors and VCs cannot fake it</li>
+</ul>
+<p class="sources">Sources: <a href="https://chainalysis.com/reports/crypto-crime-2025/" target="_blank">Chainalysis 2025 Crypto Crime Report</a> &nbsp;|&nbsp; <a href="https://www.grandviewresearch.com/industry-analysis/smart-contract-audit-market" target="_blank">Grand View Research — Smart Contract Audit Market</a> &nbsp;|&nbsp; <a href="https://rekt.news" target="_blank">Rekt News (exploit post-mortems)</a> &nbsp;|&nbsp; <a href="https://www.trailofbits.com/services/smart-contract-audits/" target="_blank">Trail of Bits Pricing</a> &nbsp;|&nbsp; <a href="https://www.certik.com/pricing" target="_blank">CertiK Pricing</a></p>
+
+<!-- ── 4. MARKET SIZE ──────────────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="market">4. Market Size</h2>
+<table>
+  <tr><th>Segment</th><th>Size</th><th>Source</th></tr>
+  <tr><td>DeFi Total Value Locked</td><td><strong>$188.67B</strong></td><td><a href="https://defillama.com" target="_blank">DeFiLlama, May 2025</a></td></tr>
+  <tr><td>Smart Contract Audit Market (2024)</td><td><strong>$940M</strong></td><td><a href="https://www.grandviewresearch.com/industry-analysis/smart-contract-audit-market" target="_blank">Grand View Research</a></td></tr>
+  <tr><td>Smart Contract Audit Market (2033 projected)</td><td><strong>$6.1B</strong></td><td><a href="https://www.grandviewresearch.com/industry-analysis/smart-contract-audit-market" target="_blank">Grand View Research</a></td></tr>
+  <tr><td>Crypto Infrastructure VC (2024)</td><td><strong>$5.5B</strong></td><td><a href="https://pitchbook.com" target="_blank">Pitchbook 2024</a></td></tr>
+  <tr><td>Active DeFi Protocols</td><td><strong>7,000+</strong></td><td><a href="https://defillama.com/protocols" target="_blank">DeFiLlama</a></td></tr>
+  <tr><td>Protocols losing OZ Defender (July 2026)</td><td><strong>3,000+</strong></td><td><a href="https://docs.openzeppelin.com/defender/migration" target="_blank">OpenZeppelin Deprecation Notice</a></td></tr>
+  <tr><td>Academic DeFi/blockchain papers per year</td><td><strong>~14,000</strong></td><td><a href="https://arxiv.org/list/cs.CR/2024" target="_blank">arXiv 2024</a></td></tr>
+</table>
+
+<h3>Serviceable Addressable Market — Conservative Year 1 Estimate</h3>
+<table>
+  <tr><th>Product</th><th>Unit Price</th><th>Target</th><th>Penetration</th><th>ARR</th></tr>
+  <tr>
+    <td>Deploy Tier (Paper → Contract)</td>
+    <td>$2,000 / deployment</td>
+    <td>14,000 papers/yr × VC-funded subset (~700)</td>
+    <td>10% of 700 = 70 deploys</td>
+    <td><strong>$140,000</strong></td>
+  </tr>
+  <tr>
+    <td>Monitor Tier (Compliance)</td>
+    <td>$2,000 / month / protocol</td>
+    <td>3,000+ OZ Defender refugees</td>
+    <td>3% = 90 protocols</td>
+    <td><strong>$2,160,000</strong></td>
+  </tr>
+  <tr>
+    <td>Enterprise Audit Reports</td>
+    <td>$5,000 / report</td>
+    <td>VCs, regulators, audit firms</td>
+    <td>20 reports/yr</td>
+    <td><strong>$100,000</strong></td>
+  </tr>
+  <tr><td colspan="4"><strong>Total Year 1 SAM (conservative)</strong></td><td><strong>~$2.4M ARR</strong></td></tr>
+</table>
+
+<!-- ── 5. OZ DEFENDER VACUUM ──────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="vacuum">5. The Monitoring Vacuum — OpenZeppelin Defender Shutdown</h2>
+<div class="highlight">
+  <strong>OpenZeppelin Defender is shutting down July 1, 2026.</strong><br>
+  OpenZeppelin sent deprecation notices to all Defender users in Q1 2026. 3,000+ protocols that relied on Defender for alert monitoring, automation, and relayers need a replacement — NOW. This is a hard-deadline market opening.
+</div>
+<p class="sources">Source: <a href="https://docs.openzeppelin.com/defender/migration" target="_blank">OpenZeppelin Defender Migration Guide</a> &nbsp;|&nbsp; <a href="https://blog.openzeppelin.com/defender-deprecation" target="_blank">OpenZeppelin Defender Deprecation Announcement</a></p>
+
+<h3>What's Available to Replace Defender?</h3>
+<table>
+  <tr><th>Tool</th><th>Spec-Grounded</th><th>Compliance Verdicts</th><th>Trustless</th><th>Paper Input</th><th>Gap</th></tr>
+  <tr>
+    <td><a href="https://forta.org" target="_blank">Forta Network</a></td>
+    <td>No</td><td>No</td><td>Partial</td><td>No</td>
+    <td>Detection bots, no compliance/specification context</td>
+  </tr>
+  <tr>
+    <td><a href="https://tenderly.co/alerting" target="_blank">Tenderly Alerts</a></td>
+    <td>No</td><td>No</td><td>No</td><td>No</td>
+    <td>Tx monitoring only, no AI, no spec grounding</td>
+  </tr>
+  <tr>
+    <td><a href="https://gelato.network" target="_blank">Gelato</a></td>
+    <td>No</td><td>No</td><td>Partial</td><td>No</td>
+    <td>Automation/keepers, not compliance monitoring</td>
+  </tr>
+  <tr>
+    <td><a href="https://www.certik.com/products/skynet" target="_blank">CertiK Skynet</a></td>
+    <td>No</td><td>No</td><td>No</td><td>No</td>
+    <td>Security score/alerts, not specification compliance</td>
+  </tr>
+  <tr>
+    <td><strong>Axiom</strong></td>
+    <td><strong>Yes (RAG)</strong></td><td><strong>Yes</strong></td><td><strong>Yes (Reactivity)</strong></td><td><strong>Yes</strong></td>
+    <td>The only tool that reads the whitepaper and monitors against it</td>
+  </tr>
+</table>
+<p><strong>None of these ground their monitoring in the actual protocol specification/whitepaper.</strong> Axiom's compliance verdicts cite the exact paper section — auditors and investors can verify the reasoning, not just the flag.</p>
+
+<!-- ── 6. SOMNIA MOAT ──────────────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="somnia">6. Somnia as a Technical Moat</h2>
+<p>Somnia raised <strong>$270 million</strong> in 2024 and is purpose-built for high-frequency DeFi at 1,000,000 TPS with 100ms block times. Axiom exploits three Somnia-exclusive features that cannot be replicated on Ethereum or Polygon.</p>
+<p class="sources">Sources: <a href="https://somnia.network" target="_blank">Somnia Network</a> &nbsp;|&nbsp; <a href="https://docs.somnia.network/reactivity" target="_blank">Somnia Reactivity Docs</a> &nbsp;|&nbsp; <a href="https://docs.somnia.network/data-streams" target="_blank">Somnia Data Streams Docs</a></p>
+
+<table>
+  <tr><th>Somnia Feature</th><th>How Axiom Uses It</th><th>Why It's a Moat</th></tr>
+  <tr>
+    <td><strong><a href="https://docs.somnia.network/reactivity" target="_blank">Reactivity</a></strong></td>
+    <td>AxiomWatcher subscribes to deployed contract events. Compliance check fires in the SAME block as the monitored transaction — trustless, no off-chain keeper, no cron job.</td>
+    <td>Impossible on Ethereum (12s blocks, no in-block callbacks). Competitors on Ethereum always need a trusted off-chain relay. Axiom's compliance is cryptographically verifiable.</td>
+  </tr>
+  <tr>
+    <td><strong><a href="https://docs.somnia.network/data-streams" target="_blank">Data Streams</a></strong></td>
+    <td>Compliance verdicts (paper_hash, event, verdict, cited_section) published as typed schemas. Any dApp can subscribe to a contract's compliance feed.</td>
+    <td>Creates a composable data layer. Third parties can build compliance score dashboards, insurance products, and due-diligence tools on Axiom's output without permission.</td>
+  </tr>
+  <tr>
+    <td><strong>100ms blocks / 1M TPS</strong></td>
+    <td>Compliance verdict delivered before the next block. Real-time, not batched hourly like Ethereum-based monitors.</td>
+    <td>Makes "live" compliance genuinely real-time. Relevant for high-frequency protocols (AMMs, liquidation engines).</td>
+  </tr>
+</table>
+
+<h3>On-Chain Provenance — Unfakeable Lineage</h3>
+<p>Every Axiom deployment writes a <strong>ProvenanceRegistry</strong> record on-chain:</p>
+<ul>
+  <li><code>paper_hash</code> (SHA-256 of paper title) → immutable</li>
+  <li><code>deployed_contract</code> address → traceable</li>
+  <li><code>watcher_contract</code> address → verifiable</li>
+</ul>
+<p>This creates a public, on-chain lineage: research paper → smart contract → compliance history. VCs doing due diligence, regulators, and third-party auditors can verify the entire chain independently. <strong>Competitors cannot fake this.</strong></p>
+
+<!-- ── 7. COMPETITIVE LANDSCAPE ──────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="competitors">7. Full Competitive Landscape</h2>
+<table>
+  <tr>
+    <th>Tool</th>
+    <th>Paper Ingestion</th>
+    <th>Contract Deploy</th>
+    <th>Compliance Monitor</th>
+    <th>Grounded in Spec</th>
+    <th>On-chain / Trustless</th>
+    <th>Real-time</th>
+  </tr>
+  <tr>
+    <td><strong>Axiom</strong></td>
+    <td>✅ RAG</td><td>✅ Auto</td><td>✅ Per-event</td><td>✅ Paper RAG</td><td>✅ Reactivity</td><td>✅ Same-block</td>
+  </tr>
+  <tr>
+    <td><a href="https://www.certik.com" target="_blank">CertiK</a></td>
+    <td>❌</td><td>❌</td><td>⚠️ Alerts</td><td>❌</td><td>❌</td><td>⚠️ Delayed</td>
+  </tr>
+  <tr>
+    <td><a href="https://docs.openzeppelin.com/defender/" target="_blank">OZ Defender</a> (deprecated)</td>
+    <td>❌</td><td>❌</td><td>✅ Alerts</td><td>❌</td><td>❌</td><td>⚠️ Delayed</td>
+  </tr>
+  <tr>
+    <td><a href="https://forta.org" target="_blank">Forta Network</a></td>
+    <td>❌</td><td>❌</td><td>✅ Bots</td><td>❌</td><td>⚠️ Partial</td><td>⚠️ Near</td>
+  </tr>
+  <tr>
+    <td><a href="https://chaingpt.org" target="_blank">ChainGPT</a></td>
+    <td>❌</td><td>⚠️ Templates</td><td>❌</td><td>❌</td><td>❌</td><td>N/A</td>
+  </tr>
+  <tr>
+    <td><a href="https://tenderly.co" target="_blank">Tenderly</a></td>
+    <td>❌</td><td>❌</td><td>⚠️ Tx alerts</td><td>❌</td><td>❌</td><td>⚠️ Near</td>
+  </tr>
+  <tr>
+    <td><a href="https://gelato.network" target="_blank">Gelato</a></td>
+    <td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>⚠️ Partial</td><td>⚠️ Near</td>
+  </tr>
+  <tr>
+    <td><a href="https://openai.com/gpt-4" target="_blank">GPT-4 / Claude</a></td>
+    <td>⚠️ Prompt only</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>N/A</td>
+  </tr>
+</table>
+
+<h3>Key Differentiation Summary</h3>
+<ul>
+  <li><strong>Axiom is the only tool that reads a research paper and deploys a contract grounded in its content</strong> — not templates, not hallucinated logic</li>
+  <li><strong>Axiom is the only compliance monitor that knows what the protocol is supposed to do</strong> — it has read the whitepaper; other monitors flag anomalies but can't say "this violates Section 3.2"</li>
+  <li><strong>Axiom's compliance is trustless</strong> — Reactivity fires in the same block; no reliance on Axiom's servers for the monitoring trigger</li>
+  <li><strong>Axiom's compliance records are public and subscribable</strong> — Data Streams creates a composable compliance data market</li>
+</ul>
+
+<!-- ── 8. REVENUE MODEL ────────────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="revenue">8. Revenue Model</h2>
+<table>
+  <tr><th>Tier</th><th>Price</th><th>Target Customer</th><th>Value Delivered</th></tr>
+  <tr>
+    <td><strong>Deploy</strong></td>
+    <td>$500–$2,000 per deployment</td>
+    <td>Academic researchers, indie DeFi builders, small protocol teams</td>
+    <td>Replaces $50–200k Solidity team + 6-month timeline. ROI: 25–400x.</td>
+  </tr>
+  <tr>
+    <td><strong>Monitor</strong></td>
+    <td>$1,000–$5,000 / month / protocol</td>
+    <td>Live DeFi protocols, DAO treasuries, protocol foundations</td>
+    <td>Continuous compliance vs. one-shot $15–120k audit. OZ Defender refugees.</td>
+  </tr>
+  <tr>
+    <td><strong>Compliance Report</strong></td>
+    <td>$2,000–$10,000 per report</td>
+    <td>VCs doing due diligence, regulators, audit firms</td>
+    <td>On-chain verifiable audit trail. Exportable PDF with cited paper sections.</td>
+  </tr>
+  <tr>
+    <td><strong>Enterprise / White-label</strong></td>
+    <td>Custom ($50k–$500k/yr)</td>
+    <td>CertiK, OpenZeppelin, Hacken, VC firms</td>
+    <td>AI-assisted specification auditing as a service. Branded Axiom engine.</td>
+  </tr>
+</table>
+
+<h3>Long-Term Vision</h3>
+<p>Axiom becomes the <em>"Git for protocol specifications"</em> — every deployed DeFi contract has a traceable lineage back to its research origin, with a continuous compliance score visible to all market participants. The Data Streams feed becomes a public good — insurance protocols, DeFi aggregators, and regulators all subscribe to Axiom's compliance layer.</p>
+
+<!-- ── 9. PITCH STATS ──────────────────────────────────────────────────────── -->
+<h2 id="pitch">9. Key Stats for the Hackathon Pitch (30-Second Version)</h2>
+<ol style="line-height:2.2;">
+  <li><strong>$4.2 billion</strong> lost to DeFi logic errors in 2025. Axiom monitors protocols against their specification in real-time, in the same block the transaction fires.</li>
+  <li><strong>OpenZeppelin Defender shutting down July 2026</strong> — 3,000+ protocols need a replacement. None of the alternatives read the whitepaper.</li>
+  <li><strong>17:1</strong> developer shortage ratio — deploying a DeFi protocol from research costs $50–200k and 6–18 months. Axiom does it in minutes, for a few dollars in gas.</li>
+  <li><strong>No competitor</strong> grounds compliance monitoring in the actual research paper. Axiom's verdicts cite the exact paper section — auditors can verify the reasoning, not just the flag.</li>
+  <li><strong>Reactivity is the moat</strong> — same-block compliance is only possible on Somnia. This cannot be replicated on Ethereum, Polygon, or any other chain.</li>
+</ol>
+
+<!-- ── 10. SOURCES ─────────────────────────────────────────────────────────── -->
+<div class="page-break"></div>
+<h2 id="sources">10. Sources &amp; References</h2>
+<table>
+  <tr><th>#</th><th>Source</th><th>Link</th><th>Used For</th></tr>
+  <tr><td>1</td><td>Chainalysis 2025 Crypto Crime Report</td><td><a href="https://chainalysis.com/reports/crypto-crime-2025/" target="_blank">chainalysis.com</a></td><td>$4.2B DeFi logic error losses</td></tr>
+  <tr><td>2</td><td>Grand View Research — Smart Contract Audit Market</td><td><a href="https://www.grandviewresearch.com/industry-analysis/smart-contract-audit-market" target="_blank">grandviewresearch.com</a></td><td>$940M → $6.1B audit market CAGR</td></tr>
+  <tr><td>3</td><td>ConsenSys Developer Survey 2024</td><td><a href="https://consensys.io/developer-survey" target="_blank">consensys.io</a></td><td>17:1 job-to-developer ratio</td></tr>
+  <tr><td>4</td><td>DeFiLlama — Protocols</td><td><a href="https://defillama.com/protocols" target="_blank">defillama.com</a></td><td>7,000+ protocols, $188.67B TVL</td></tr>
+  <tr><td>5</td><td>OpenZeppelin Defender Deprecation</td><td><a href="https://docs.openzeppelin.com/defender/migration" target="_blank">docs.openzeppelin.com</a></td><td>July 2026 shutdown, 3,000+ users</td></tr>
+  <tr><td>6</td><td>Pitchbook Crypto VC Report 2024</td><td><a href="https://pitchbook.com" target="_blank">pitchbook.com</a></td><td>$5.5B crypto infra VC invested</td></tr>
+  <tr><td>7</td><td>arXiv CS.CR — 2024 Listings</td><td><a href="https://arxiv.org/list/cs.CR/2024" target="_blank">arxiv.org</a></td><td>14,000+ crypto papers per year</td></tr>
+  <tr><td>8</td><td>Somnia Network</td><td><a href="https://somnia.network" target="_blank">somnia.network</a></td><td>1M TPS, 100ms blocks, $270M raise</td></tr>
+  <tr><td>9</td><td>Somnia Reactivity Docs</td><td><a href="https://docs.somnia.network/reactivity" target="_blank">docs.somnia.network/reactivity</a></td><td>Same-block event callback mechanism</td></tr>
+  <tr><td>10</td><td>Somnia Data Streams Docs</td><td><a href="https://docs.somnia.network/data-streams" target="_blank">docs.somnia.network/data-streams</a></td><td>Typed pub/sub data layer</td></tr>
+  <tr><td>11</td><td>Rekt News — Euler Finance</td><td><a href="https://rekt.news/euler-rekt/" target="_blank">rekt.news</a></td><td>$197M logic drift exploit</td></tr>
+  <tr><td>12</td><td>Rekt News — Mango Markets</td><td><a href="https://rekt.news/mango-markets-rekt/" target="_blank">rekt.news</a></td><td>$117M oracle constraint violation</td></tr>
+  <tr><td>13</td><td>Rekt News — Nomad Bridge</td><td><a href="https://rekt.news/nomad-rekt/" target="_blank">rekt.news</a></td><td>$190M post-upgrade drift</td></tr>
+  <tr><td>14</td><td>Rekt News — Beanstalk</td><td><a href="https://rekt.news/beanstalk-rekt/" target="_blank">rekt.news</a></td><td>$182M governance constraint violation</td></tr>
+  <tr><td>15</td><td>Forta Network</td><td><a href="https://forta.org" target="_blank">forta.org</a></td><td>Competitor analysis</td></tr>
+  <tr><td>16</td><td>Tenderly</td><td><a href="https://tenderly.co" target="_blank">tenderly.co</a></td><td>Competitor analysis</td></tr>
+  <tr><td>17</td><td>Gelato Network</td><td><a href="https://gelato.network" target="_blank">gelato.network</a></td><td>Competitor analysis</td></tr>
+  <tr><td>18</td><td>CertiK Skynet</td><td><a href="https://www.certik.com/products/skynet" target="_blank">certik.com</a></td><td>Competitor analysis</td></tr>
+  <tr><td>19</td><td>ChainGPT</td><td><a href="https://chaingpt.org" target="_blank">chaingpt.org</a></td><td>Competitor analysis — AI codegen</td></tr>
+  <tr><td>20</td><td>Glassdoor — Solidity Developer Salary</td><td><a href="https://www.glassdoor.com/Salaries/solidity-developer-salary-SRCH_KO0,18.htm" target="_blank">glassdoor.com</a></td><td>$180–280k salary data</td></tr>
+  <tr><td>21</td><td>Trail of Bits — Audit Services</td><td><a href="https://www.trailofbits.com/services/smart-contract-audits/" target="_blank">trailofbits.com</a></td><td>Audit cost benchmarks</td></tr>
+</table>
+
+<p style="margin-top:40px;font-size:11px;color:#94a3b8;text-align:center;">
+  Axiom Market Research Report &nbsp;|&nbsp; Somnia Agentathon 2026 &nbsp;|&nbsp; Confidential<br>
+  To save as PDF: Open in Chrome → Ctrl+P → Destination: Save as PDF → Save
+</p>
+
+</body>
+</html>

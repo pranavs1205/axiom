@@ -1,23 +1,5 @@
-# Axiom: From Research to Reality
-## How On-Chain Protocol Intelligence Transforms Research, Deployment, and Patent Protection
 
----
 
-## The Gap Nobody Talks About
-
-Every year, thousands of research papers are published describing novel financial mechanisms — automated market makers, lending protocols, governance systems, zero-knowledge primitives, auction designs. A small fraction of them ever get deployed. Of those that do, almost none are monitored after deployment to verify they still behave as described.
-
-This gap between *what researchers write* and *what runs on-chain* costs the industry in three concrete ways:
-
-1. **Lost innovation.** A researcher at MIT publishes a superior AMM design. No team has the Solidity expertise or funding to implement it. The paper sits on arXiv, cited but never used.
-
-2. **Invisible drift.** A protocol deploys faithfully to its whitepaper. Eighteen months later, after three upgrades and two governance votes, the live contracts no longer match the original specification. Nobody checked. Then it gets exploited.
-
-3. **Unenforceable IP.** A researcher patents a novel bonding curve mechanism. A competitor deploys what looks like the same design under a different name. Without an automated way to compare the deployed bytecode behavior against the patent specification, the IP is practically unenforceable.
-
-Axiom addresses all three. This report walks through how — through the real stories of the people who would use it every day.
-
----
 
 ## Story 1 — The Researcher Who Couldn't Ship
 

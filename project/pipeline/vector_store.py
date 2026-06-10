@@ -25,6 +25,14 @@ from pipeline.chunking import Chunk
 # Model name — can be swapped for a larger model if quality matters more than speed
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
+_model_instance: "SentenceTransformer | None" = None
+
+def _get_model() -> "SentenceTransformer":
+    global _model_instance
+    if _model_instance is None:
+        _model_instance = SentenceTransformer(EMBEDDING_MODEL)
+    return _model_instance
+
 # Paths for persisting the vector store to disk
 DEFAULT_INDEX_PATH = "faiss_index.bin"
 DEFAULT_META_PATH = "faiss_metadata.json"
@@ -49,8 +57,7 @@ def build_vector_store(chunks: list[Chunk]) -> VectorStore:
     Returns:
         VectorStore with index, metadata, and loaded embedding model.
     """
-    print(f"[vector_store] Loading embedding model '{EMBEDDING_MODEL}'...")
-    model = SentenceTransformer(EMBEDDING_MODEL)
+    model = _get_model()
 
     texts = [c["text"] for c in chunks]
     print(f"[vector_store] Encoding {len(texts)} chunks...")
@@ -114,6 +121,6 @@ def load_vector_store(
     with open(meta_path) as f:
         metadata = json.load(f)
 
-    model = SentenceTransformer(EMBEDDING_MODEL)
+    model = _get_model()
     print(f"[vector_store] Loaded index with {index.ntotal} vectors.")
     return VectorStore(index=index, metadata=metadata, model=model)

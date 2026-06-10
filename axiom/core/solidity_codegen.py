@@ -47,6 +47,18 @@ HARD RULES:
     Before writing any call, count the parameters in the function definition and match them exactly.
     NEVER write: someFunction() if someFunction(uint256 x) requires 1 argument.
     NEVER omit required constructor arguments when deploying contracts with `new`.
+15. CONSTRUCTOR: The constructor MUST take ZERO parameters. Do NOT add constructor arguments.
+    Store all configuration as hardcoded constants or state variables set inside the constructor body.
+    CORRECT:  constructor() { owner = msg.sender; threshold = 100; }
+    WRONG:    constructor(uint256 _threshold) { threshold = _threshold; }
+16. NEVER cast string to uint256. `uint256(myString)` is INVALID Solidity and will not compile.
+    If an event param is uint256 but you have a string, pass a counter or 0 instead.
+    CORRECT:  emit MyEvent(msg.sender, queryCount, value);
+    WRONG:    emit MyEvent(msg.sender, uint256(_query), value);
+17. STRING LENGTH: Use `bytes(myString).length` NOT `myString.length`.
+    `string` in Solidity does not expose `.length` directly — wrap in bytes() first.
+    CORRECT:  uint256 len = bytes(_query).length;
+    WRONG:    uint256 len = _query.length;
 
 THE EXACT OUTPUT STRUCTURE (copy this skeleton):
 
@@ -64,9 +76,9 @@ contract <ContractName> {
     uint256 public someParam;
 
     // ── Constructor ─────────────────────────────────────────────────────────
-    constructor(uint256 _someParam) {
+    constructor() {
         owner = msg.sender;
-        someParam = _someParam;
+        someParam = 100;
     }
 
     // ── Core Functions ──────────────────────────────────────────────────────
@@ -89,6 +101,25 @@ contract <ContractName> {
 
 REMINDER: events MUST be inside the contract {{ }} braces, not at file level.
 """
+
+
+def _strip_natspec_params(code: str) -> str:
+    """
+    Remove @param and @return NatSpec tags.
+
+    solc 0.8.20 errors when @param names don't exactly match function parameter
+    names. LLMs frequently write `@param k` but use `uint256 _k` as the actual
+    parameter (underscore prefix). Stripping these tags eliminates the mismatch.
+    @notice tags are kept — they don't reference parameter names.
+    """
+    lines = []
+    for line in code.splitlines():
+        s = line.strip()
+        if s.startswith("/// @param") or s.startswith("/// @return") \
+                or s.startswith("* @param") or s.startswith("* @return"):
+            continue
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def _fix_structure(code: str) -> str:
@@ -151,6 +182,9 @@ def _fix_structure(code: str) -> str:
     code = _fix_indexed_events(code)
     code = _fix_float_literals(code)
     code = _fix_missing_data_locations(code)
+    code = _fix_string_casts(code)
+    code = _fix_constructor(code)
+    code = _strip_natspec_params(code)
     return code
 
 
@@ -230,6 +264,55 @@ def _fix_float_literals(code: str) -> str:
     return code
 
 
+def _fix_constructor(code: str) -> str:
+    """
+    Replace the entire constructor block with a minimal no-arg version.
+
+    The old approach of replacing param names with '1' fails when require()
+    compares two params — e.g. require(_threshold < _max) → require(1 < 1) → revert.
+
+    Solution: replace the WHOLE constructor body using brace-depth counting so
+    nothing inside can revert. Only keeps `owner = msg.sender;` if an owner
+    state variable exists.
+    """
+    lines = code.splitlines()
+    ctor_start = None
+    ctor_end = None
+    depth = 0
+    in_ctor = False
+
+    for i, line in enumerate(lines):
+        if re.match(r'\s*constructor\s*\(', line) and not in_ctor:
+            ctor_start = i
+            in_ctor = True
+        if in_ctor:
+            depth += line.count('{') - line.count('}')
+            if depth <= 0 and ctor_start is not None and i >= ctor_start:
+                # Only stop once we have consumed at least the opening brace line
+                if '{' in lines[ctor_start] or any('{' in lines[j] for j in range(ctor_start, i + 1)):
+                    ctor_end = i
+                    break
+
+    if ctor_start is None or ctor_end is None:
+        print("[solidity_codegen] _fix_constructor: no constructor found — code unchanged")
+        return code
+
+    print(f"[solidity_codegen] _fix_constructor: found constructor at lines {ctor_start}-{ctor_end}")
+    has_owner = bool(re.search(r'\baddress\s+(?:public\s+)?owner\b', code))
+
+    replacement = ['    constructor() {']
+    if has_owner:
+        replacement.append('        owner = msg.sender;')
+    replacement.append('    }')
+
+    new_lines = lines[:ctor_start] + replacement + lines[ctor_end + 1:]
+    print(
+        f"[solidity_codegen] Replaced constructor body (lines {ctor_start}-{ctor_end}) "
+        f"with minimal no-arg version"
+    )
+    return '\n'.join(new_lines)
+
+
 # Reference types that require a data location keyword in function signatures.
 # Matches: string | bytes (not bytes1-32) | any T[] array type
 # Does NOT match value types: address, uint256, int256, bool, bytesN
@@ -237,6 +320,53 @@ _REF_TYPES = re.compile(
     r"\b(string|bytes(?!\d)|\w+(?:\[\])+)"
 )
 _DATA_LOC = re.compile(r"\b(memory|calldata|storage)\b")
+
+
+def _fix_string_casts(code: str) -> str:
+    """
+    Fix two invalid patterns the LLM generates when dealing with string params:
+
+    1. uint256(stringVar)  — strings cannot be cast to uint256.
+       Replaced with 0 (safe no-op that always compiles).
+
+    2. stringVar.length  — `string` in Solidity has no .length property.
+       Replaced with bytes(stringVar).length which is valid.
+
+    Both fixes scan for string-typed variable names declared anywhere in the
+    contract so we only touch actual string variables, not unrelated identifiers.
+    """
+    # Collect all names declared as string (with or without location keyword)
+    string_vars = set()
+    for m in re.finditer(r'\bstring\s+(?:calldata|memory|storage)?\s+(\w+)\b', code):
+        string_vars.add(m.group(1))
+
+    if not string_vars:
+        return code
+
+    lines = code.splitlines()
+    result = []
+    for line in lines:
+        original = line
+
+        # Fix 1: uint256(strVar) → 0
+        def fix_cast(m: re.Match) -> str:
+            var = m.group(1).strip()
+            if var in string_vars:
+                print(f"[solidity_codegen] Fixed invalid string→uint256 cast: uint256({var}) → 0")
+                return "0"
+            return m.group(0)
+        line = re.sub(r'\buint256\s*\(\s*(\w+)\s*\)', fix_cast, line)
+
+        # Fix 2: strVar.length → bytes(strVar).length
+        for var in string_vars:
+            pattern = rf'\b{re.escape(var)}\.length\b'
+            if re.search(pattern, line):
+                print(f"[solidity_codegen] Fixed string.length: {var}.length → bytes({var}).length")
+                line = re.sub(pattern, f'bytes({var}).length', line)
+
+        result.append(line)
+
+    return "\n".join(result)
 
 
 def _fix_missing_data_locations(code: str) -> str:
@@ -287,7 +417,9 @@ Core rules to never break:
 - Max 3 indexed params per event
 - All string/bytes/array params need calldata or memory
 - Every function call must pass exactly the right number of arguments
-- Never call an undefined function"""
+- Never call an undefined function
+- NEVER cast string to uint256 — uint256(myString) is invalid. Use a counter uint256 variable or 0 instead.
+- STRING LENGTH: use bytes(myString).length NOT myString.length"""
 
 
 def _try_compile(code: str, contract_name: str) -> str | None:
@@ -316,7 +448,10 @@ def _fix_with_llm(code: str, error: str, api_key: str) -> str:
         "Output ONLY the complete corrected Solidity source code."
     )
     raw = call_llm_with_system(FIX_SYSTEM_PROMPT, user_prompt, api_key=api_key, temperature=0.0)
-    return _fix_structure(raw)
+    fixed = _fix_structure(raw)
+    # Run string-specific fixers again after LLM output — the model tends to re-introduce these
+    fixed = _fix_string_casts(fixed)
+    return fixed
 
 
 def generate_solidity(query: str, store: VectorStore, api_key: str, top_k: int = 6) -> dict:

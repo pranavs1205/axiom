@@ -2,10 +2,12 @@ services:
   - type: web
     name: axiom
     runtime: python
-    rootDir: .
-    buildCommand: |
-      pip install -r axiom/requirements.txt
-      cd axiom && npm install
+    region: oregon
+    plan: starter
+    buildCommand: >-
+      pip install -r axiom/requirements.txt &&
+      cd axiom && npm install &&
+      python -c "import solcx; solcx.install_solc('0.8.20'); print('[build] solc 0.8.20 ready')"
     startCommand: cd axiom && uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: GROQ_API_KEY
@@ -19,5 +21,8 @@ services:
       - key: PROVENANCE_REGISTRY_ADDRESS
         sync: false
       - key: COMPLIANCE_LOG_ADDRESS
-        value: ""
-    plan: free
+        sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: TRANSFORMERS_CACHE
+        value: /opt/render/project/.cache/huggingface

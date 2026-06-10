@@ -31,6 +31,9 @@ PRIVATE_KEY = os.getenv("SOMNIA_PRIVATE_KEY", "")
 
 CONTRACTS_DIR = Path(__file__).parent.parent / "contracts"
 
+# ABI cache — compile each contract file only once per process lifetime
+_abi_cache: dict[str, tuple[list, str]] = {}
+
 EXPLORER_BASE = (
     "https://shannon-explorer.somnia.network"
     if CHAIN_ID == 50312
@@ -80,25 +83,27 @@ def compile_solidity(source_code: str, contract_name: str) -> tuple[list, str]:
 
 
 def _compile_contract_file(filename: str) -> tuple[list, str]:
-    """Compile a contract from axiom/contracts/ by filename."""
-    source = (CONTRACTS_DIR / filename).read_text()
-    name   = filename.replace(".sol", "")
-    return compile_solidity(source, name)
+    """Compile a contract from axiom/contracts/ by filename (cached per process)."""
+    if filename not in _abi_cache:
+        source = (CONTRACTS_DIR / filename).read_text()
+        name   = filename.replace(".sol", "")
+        _abi_cache[filename] = compile_solidity(source, name)
+    return _abi_cache[filename]
 
 
 # ── Deployment ────────────────────────────────────────────────────────────────
 
 def _send_and_wait(w3: Web3, tx_dict: dict) -> dict:
     account = _account(w3)
-    # web3.py v7 build_transaction() auto-fills EIP-1559 fields; strip them and
-    # force a legacy (type-0) transaction which Somnia POA testnet accepts.
-    for eip1559_field in ("maxFeePerGas", "maxPriorityFeePerGas", "accessList"):
+    # Strip EIP-1559 fields — leave no type field so eth_account uses legacy signing.
+    for eip1559_field in ("maxFeePerGas", "maxPriorityFeePerGas", "accessList", "type"):
         tx_dict.pop(eip1559_field, None)
-    tx_dict.setdefault("chainId",  CHAIN_ID)
-    # Use network gas price so we always exceed the base fee
-    network_gas_price = w3.eth.gas_price
-    tx_dict.setdefault("gasPrice", network_gas_price)
-    tx_dict["nonce"] = w3.eth.get_transaction_count(account.address)
+    tx_dict["chainId"]  = CHAIN_ID
+    # Always override gasPrice to ensure we exceed the network base fee.
+    tx_dict["gasPrice"] = w3.eth.gas_price
+    tx_dict["nonce"]    = w3.eth.get_transaction_count(account.address)
+
+    # Somnia RPC does not support eth_call for contract creation — skip pre-flight.
 
     signed  = account.sign_transaction(tx_dict)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
@@ -115,7 +120,7 @@ def deploy_contract(
     bytecode: str,
     constructor_args: list = None,
     value_wei: int = 0,
-    gas: int = 3_000_000,
+    gas: int = 10_000_000,
 ) -> str:
     """Deploy a compiled contract. Returns deployed address."""
     account  = _account(w3)
@@ -128,6 +133,13 @@ def deploy_contract(
     })
     receipt = _send_and_wait(w3, deploy_tx)
     address = receipt["contractAddress"]
+    # Verify contract code was actually stored (reverted constructors leave empty code)
+    deployed_code = w3.eth.get_code(address)
+    if not deployed_code or deployed_code == b"" or deployed_code == "0x":
+        raise RuntimeError(
+            f"[deployer] Constructor reverted — no code at {address}. "
+            "Check constructor logic and arguments."
+        )
     print(f"[deployer] Deployed at: {address}")
     return address
 
@@ -173,22 +185,14 @@ def deploy_axiom_watcher(w3: Web3, monitored_contract: str, gas_limit: int = 300
     """
     abi, bytecode = _compile_contract_file("AxiomWatcher.sol")
 
-    # Try with a small SOMI/STT value for Reactivity gas; fall back to 0 if it reverts
-    for value_wei in [w3.to_wei("0.001", "ether"), 0]:
-        try:
-            address = deploy_contract(
-                w3, abi, bytecode,
-                constructor_args=[Web3.to_checksum_address(monitored_contract), gas_limit],
-                value_wei=value_wei,
-                gas=1_000_000,
-            )
-            print(f"[deployer] AxiomWatcher deployed: {address}")
-            return address, abi
-        except Exception as e:
-            if value_wei > 0:
-                print(f"[deployer] AxiomWatcher deploy with value failed ({e}), retrying without value...")
-            else:
-                raise
+    address = deploy_contract(
+        w3, abi, bytecode,
+        constructor_args=[Web3.to_checksum_address(monitored_contract), gas_limit],
+        value_wei=0,
+        gas=10_000_000,
+    )
+    print(f"[deployer] AxiomWatcher deployed: {address}")
+    return address, abi
 
 
 # ── Provenance registration ───────────────────────────────────────────────────
@@ -321,11 +325,36 @@ def deploy_from_paper(solidity_code: str, contract_name: str, paper_title: str) 
     w3 = get_web3()
     print(f"[deployer] Connected — block {w3.eth.block_number}, chain {CHAIN_ID}")
 
+    # Safety net: re-apply fixes in case codegen missed anything
+    try:
+        from core.solidity_codegen import _fix_constructor, _strip_natspec_params
+        solidity_code = _fix_constructor(solidity_code)
+        solidity_code = _strip_natspec_params(solidity_code)
+    except Exception as _fix_err:
+        print(f"[deployer] safety-net fixes failed (non-fatal): {_fix_err}")
+
+    # Print full code so failures are diagnosable
+    print("[deployer] === CONTRACT CODE TO COMPILE ===")
+    print(solidity_code)
+    print("[deployer] === END CODE ===")
+
     print(f"[deployer] Compiling '{contract_name}'...")
     abi, bytecode = compile_solidity(solidity_code, contract_name)
 
+    # Auto-generate constructor arguments from ABI so we never pass wrong arg count
+    account = _account(w3)
+    constructor_entry = next((f for f in abi if f.get("type") == "constructor"), None)
+    constructor_args = []
+    if constructor_entry:
+        constructor_args = [
+            _default_arg(p["type"], w3, account.address)
+            for p in constructor_entry.get("inputs", [])
+        ]
+    if constructor_args:
+        print(f"[deployer] Constructor args ({len(constructor_args)}): {constructor_args}")
+
     print(f"[deployer] Deploying '{contract_name}' to Somnia...")
-    deployed_address = deploy_contract(w3, abi, bytecode)
+    deployed_address = deploy_contract(w3, abi, bytecode, constructor_args=constructor_args)
 
     paper_hash = "0x" + hashlib.sha256(paper_title.encode()).hexdigest()
 
